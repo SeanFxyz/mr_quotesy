@@ -1,7 +1,6 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
 const base_url = "https://fallout.fandom.com";
-const sqlite = require("sqlite3");
 
 async function getQuotes(url) {
 	// tags of interest
@@ -14,12 +13,18 @@ async function getQuotes(url) {
 	// "span.va-quotation-text" - top-of-page quote
 	//
 	// "div.lightbox-caption" - contains a quote and a "div.mediaContainer"
+	//
+	// "div.np-collapsible" - contains a "ul" of quotes
 
 	const { data } = await axios.get(base_url.concat(url));
 	const $ = cheerio.load(data);
 
-	const heading = $("h2:contains('Notable quotes')", "div.mw-parser-output");
+	const heading = "h2:contains('Notable quotes')";
 	// TODO: get the quotes under the heading
+	var quote_section = $("h2:contains('Notable quotes')").nextUntil("h2");
+	var quotes = quote_section.find("li");
+	console.log(quotes["1"]);
+
 }
 
 async function crawl(quotes, url) {
