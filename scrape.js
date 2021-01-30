@@ -3,7 +3,7 @@ const cheerio = require("cheerio");
 const base_url = "https://fallout.fandom.com";
 const sqlite = require("sqlite3");
 
-function getQuotes(url) {
+async function getQuotes(url) {
 	// tags of interest
 	// ================
 	// "div.mediaContainer" - holds the audio file player
@@ -15,21 +15,27 @@ function getQuotes(url) {
 	//
 	// "div.lightbox-caption" - contains a quote and a "div.mediaContainer"
 
+	const { data } = await axios.get(base_url.concat(url));
+	const $ = cheerio.load(data);
+
+	const heading = $("h2:contains('Notable quotes')", "div.mw-parser-output");
+	// TODO: get the quotes under the heading
 }
 
 async function crawl(quotes, url) {
 
-	if (url.split("/").find(str => str.startsWith("Category:")) === undefined) {
-		console.log(`Found article: ${url}`)
+	const page = url.split("/").pop()
+	if (page.toLowerCase().startsWith("category:")) {
+		console.log(`Found article: ${page}`)
 		const page_quotes = getQuotes(url);
 		for (q in page_quotes) {
 			quotes.push({
 				"text": q["text"],
 				"audio": q["audio"],
-				"url": url
+				"page": page
 			});
 		}
-		console.log(`Got ${page_quotes.length}`);
+		console.log(`Got ${page_quotes.length} quotes`);
 		return;
 	}
 
@@ -51,4 +57,6 @@ function scrape() {
 	return pages;
 }
 
-const pages = scrape();
+//const pages = scrape();
+const quotes = getQuotes("/wiki/Caesar");
+console.log(quotes);
