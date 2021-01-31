@@ -22,9 +22,21 @@ async function getQuotes(url) {
 	const heading = "h2:contains('Notable quotes')";
 	// TODO: get the quotes under the heading
 	var quote_section = $("h2:contains('Notable quotes')").nextUntil("h2");
-	var quotes = quote_section.find("li");
-	console.log(quotes["1"]);
-
+	var elements = quote_section.find("li");
+	console.log(elements["1"].text);
+	return;
+	const quotes = [];
+	var i = 0;
+	while (elements[i]) {
+		console.log("Quote text:");
+		console.log(elements[i].text);
+		i++;
+		continue;
+		quotes.push({
+			"text": elements[i].text,
+			"audio": ""
+		});
+	}
 }
 
 async function crawl(quotes, url) {
