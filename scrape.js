@@ -19,24 +19,16 @@ async function getQuotes(url) {
 	const { data } = await axios.get(base_url.concat(url));
 	const $ = cheerio.load(data);
 
-	const heading = "h2:contains('Notable quotes')";
-	// TODO: get the quotes under the heading
-	var quote_section = $("h2:contains('Notable quotes')").nextUntil("h2");
-	var elements = quote_section.find("li");
-	console.log(elements["1"].text);
-	return;
-	const quotes = [];
-	var i = 0;
-	while (elements[i]) {
-		console.log("Quote text:");
-		console.log(elements[i].text);
-		i++;
-		continue;
-		quotes.push({
-			"text": elements[i].text,
-			"audio": ""
-		});
+	var quote_section = $("h2:contains('Notable quotes')")
+		.nextUntil("h2")
+		.find("li");
+	quote_section.find("a,span").text("");
+	for (let i = 0; i < quote_section.length; i++) {
+		let li = quote_section.eq(i);
+		let quote_text = li.text();
+		let file_url = li.find("source").attr("src");
 	}
+
 }
 
 async function crawl(quotes, url) {
