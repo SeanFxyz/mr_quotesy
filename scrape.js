@@ -1,8 +1,10 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
+const fs = require("fs");
+
 const base_url = "https://fallout.fandom.com";
 
-async function getQuotes(url) {
+async function getQuotes(quotes, url) {
 	// tags of interest
 	// ================
 	// "div.mediaContainer" - holds the audio file player
@@ -19,6 +21,9 @@ async function getQuotes(url) {
 	const { data } = await axios.get(base_url.concat(url));
 	const $ = cheerio.load(data);
 
+	const page_title = url.split("/").pop();
+	const page = {"page_title": page_title, "quotes": []};
+
 	var quote_section = $("h2:contains('Notable quotes')")
 		.nextUntil("h2")
 		.find("li");
@@ -26,46 +31,51 @@ async function getQuotes(url) {
 	for (let i = 0; i < quote_section.length; i++) {
 		let li = quote_section.eq(i);
 		let quote_text = li.text();
-		let file_url = li.find("source").attr("src");
+		let audio_url = li.find("source").attr("src");
+		page["quotes"].push({
+			"text": quote_text,
+			"audio": audio_url,
+		});
 	}
 
+	quotes.push(page);
 }
 
 async function crawl(quotes, url) {
 
-	const page = url.split("/").pop()
-	if (page.toLowerCase().startsWith("category:")) {
-		console.log(`Found article: ${page}`)
-		const page_quotes = getQuotes(url);
-		for (q in page_quotes) {
-			quotes.push({
-				"text": q["text"],
-				"audio": q["audio"],
-				"page": page
-			});
-		}
-		console.log(`Got ${page_quotes.length} quotes`);
-		return;
+	const page_title = url.split("/").pop().toLowerCase();
+	if (page_title.startsWith("category:") === false &&
+			page_title.startsWith("file:") === false) {
+
+		return getQuotes(quotes, url);
 	}
 
-	const { data } = await axios.get(base_url.concat(url));
+	const { data } = await axios.get(base_url.concat(url)).catch((error) => {
+		console.error(`Error getting page: ${url}`);
+		return;
+	});
+
 	const $ = cheerio.load(data);
 
 	var members = $("div.category-page__members").find(".category-page__member-link");
-	var i = 0
-	while (members[i]) {
-		crawl(quotes, members[i].attribs["href"]);
-		i++;
+	for (let i = 0; i < members.length; i++) {
+		crawl(quotes, members.eq(i).attr("href"));
 	}
 }
 
-function scrape() {
+function getCharQuotes() {
 	const start_url ="/wiki/Category:Characters_by_game";
-	const pages = [];
-	crawl(pages, start_url);
-	return pages;
+	const quotes = [];
+	crawl(quotes, start_url);
+	return quotes;
+	console.log("Writing to quotes.json...");
+	fs.writeFile("quotes.json", JSON.stringify(quotes), "utf8", (err) => {
+		if (err) {
+			console.log(`Error writing file: ${err}`);
+		} else {
+			console.log("Quote database successfully saved!");
+		}
+	});
 }
 
-//const pages = scrape();
-const quotes = getQuotes("/wiki/Caesar");
-console.log(quotes);
+getCharQuotes();
