@@ -18,10 +18,14 @@ async function getQuotes(quotes, url) {
 	//
 	// "div.np-collapsible" - contains a "ul" of quotes
 
-	const { data } = await axios.get(base_url.concat(url));
+	const { data } = await axios.get(base_url.concat(url)).catch( error => {
+		console.error(`Error loading page: ${url}`);
+		return;
+	});
 	const $ = cheerio.load(data);
 
 	const page_title = url.split("/").pop();
+	quotes["pages"][page_title] = [];
 	const page = {"page_title": page_title, "quotes": []};
 
 	var quote_section = $("h2:contains('Notable quotes')")
@@ -32,26 +36,27 @@ async function getQuotes(quotes, url) {
 		let li = quote_section.eq(i);
 		let quote_text = li.text();
 		let audio_url = li.find("source").attr("src");
-		page["quotes"].push({
+		quotes["pages"][page_title]["quotes"].push {
 			"text": quote_text,
 			"audio": audio_url,
 		});
+		console.log(quote_text);
 	}
 
-	quotes.push(page);
+	console.log(`Got ${page["quotes"].length} quotes from ${url}`);
 }
 
 async function crawl(quotes, url) {
 
 	const page_title = url.split("/").pop().toLowerCase();
-	if (page_title.startsWith("category:") === false &&
-			page_title.startsWith("file:") === false) {
-
+	if (page_title.startsWith("file:")) {
+		return;
+	} else if (page_title.startsWith("category:") === false) {
 		return getQuotes(quotes, url);
 	}
 
-	const { data } = await axios.get(base_url.concat(url)).catch((error) => {
-		console.error(`Error getting page: ${url}`);
+	const { data } = await axios.get(base_url.concat(url)).catch(error => {
+		console.error(`Error loading page: ${url}`);
 		return;
 	});
 
@@ -65,7 +70,7 @@ async function crawl(quotes, url) {
 
 function getCharQuotes() {
 	const start_url ="/wiki/Category:Characters_by_game";
-	const quotes = [];
+	const quotes = {"pages": {}};
 	crawl(quotes, start_url);
 	return quotes;
 	console.log("Writing to quotes.json...");
